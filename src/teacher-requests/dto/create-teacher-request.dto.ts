@@ -79,7 +79,7 @@ export class CreateTeacherRequestDto {
   @ApiProperty({
     description: 'Ability to teach in English',
     enum: EnglishLevel,
-    example: EnglishLevel.ADVANCED,
+    example: EnglishLevel.NO,
     required: true
   })
   @IsNotEmpty({ message: 'توانایی تدریس به زبان انگلیسی الزامی است' })

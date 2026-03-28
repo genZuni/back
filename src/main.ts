@@ -19,6 +19,6 @@ async function bootstrap() {
   setupSwagger(app);
   app.setGlobalPrefix('/:lang');
   app.enableCors()
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT ?? 81);
 }
 bootstrap();

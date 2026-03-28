@@ -9,6 +9,7 @@ import { CategoryService } from './category.service';
 import { CategoryController } from './category.controller';
 import { Category } from 'src/entity/category.enity';
 import { CategoryLocate } from 'src/entity/categoryLocate.enity';
+import { ClassService } from './class.service';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { CategoryLocate } from 'src/entity/categoryLocate.enity';
     ]),
     UsersModule,
   ],
-  providers: [TeacherServies, CategoryService],
+  providers: [TeacherServies, CategoryService, ClassService],
   controllers: [TeacherController, CategoryController],
 })
 export class TeacherModule {}

@@ -16,10 +16,10 @@ export enum RequestStatus {
 }
 
 export enum EnglishLevel {
-  BEGINNER = 'beginner',
-  INTERMEDIATE = 'intermediate',
-  ADVANCED = 'advanced',
-  NATIVE = 'native'
+  WEAK = 'weak',
+  GOOOD = 'good',
+  NO = 'no',
+
 }
 
 @Entity('teacher_requests')
@@ -50,7 +50,7 @@ export class TeacherRequest {
   @Column({
     type: 'enum',
     enum: EnglishLevel,
-    default: EnglishLevel.INTERMEDIATE
+    default: EnglishLevel.NO
   })
   englishLevel: EnglishLevel;
 

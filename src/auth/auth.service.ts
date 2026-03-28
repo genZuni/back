@@ -66,7 +66,8 @@ export class AuthService {
     if (existing) {
       throw new ConflictException('Email already exists');
     }
-    const code = crypto.randomInt(10000);
+    const code = 11111
+    // const code = crypto.randomInt(10000);
 //     await this.appService.sendHtmlEmail(
 //       dto.email,
 //       'Email registeration code',
@@ -125,15 +126,15 @@ export class AuthService {
     if (!data) throw new NotFoundException('data not fount');
 
     const user = await this.usersService.create(data);
-    // const payload = {
-    //   sub: user.id,
-    //   email: user.email,
-    //   role: user.role,
-    // };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
 
-    // return {
-    //   access_token: this.jwtService.sign(payload),
-    //   user,
-    // };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user,
+    };
   }
 }
