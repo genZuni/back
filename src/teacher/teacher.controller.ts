@@ -59,9 +59,7 @@ export class TeacherController {
   addUser(@Param('id', ParseUUIDPipe) id: string) {
     return this.teacherServices.addUser(id);
   }
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
-  @ApiBearerAuth()
+
   @Get('all')
   @ApiOperation({ summary: 'Get all teachers with filters' })
   @ApiQuery({

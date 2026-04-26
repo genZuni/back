@@ -36,18 +36,21 @@ import { TicketModule } from './ticket/ticket.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
-
-        host: '185.208.181.161',
-        port: 31136,
-
+        // connectorPackage: 'mysql2',
+        host: 'elbrus.liara.cloud',
+        port: 30439,
         username: 'root',
-        password: 'StTeBr80corzEYaOvsB03r5I',
-
-        database: 'test',
-
+        password: 'aJbgrOJ3A9tk4VtdKHBiJk7m',
+        database: 'rune',
         ssl: false,
+        connectTimeout: 10000,
+        extra: {
+          connectionLimit: 100,
+        },
+        
         autoLoadEntities: true,
         synchronize: true,
+        logging: true,
       }),
     }),
   ],

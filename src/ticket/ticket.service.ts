@@ -265,7 +265,7 @@ export class TicketService {
       where: { ticket: { id: In(ticketIds) } },
       relations: ['readStatuses', 'readStatuses.user','ticket'], // Add user relation
     });
-
+console.log("object")
     const counts: Record<string, number> = {};
     for (const ticketId of ticketIds) {
       const ticketMessages = messages.filter((m) => m?.ticket?.id === ticketId);
@@ -273,10 +273,10 @@ export class TicketService {
         ticketMessages
           .flatMap((m) => m.readStatuses || []) // Handle null/undefined
           .filter((rs) => rs.user && rs.user.id === user.id) // Check if user exists
-          .map((rs) => rs.message.id),
+          .map((rs) => rs?.message?.id),
       );
       counts[ticketId] = ticketMessages.filter(
-        (m) => !readMessageIds.has(m.id),
+        (m) => !readMessageIds.has(m?.id),
       ).length;
     }
 

@@ -60,9 +60,9 @@ export class User extends BaseEntity {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToOne(()=>Teacher,e=>e.user)
-  teacher?:Teacher
-  
+  @OneToOne(() => Teacher, (e) => e.user)
+  teacher?: Teacher;
+
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword() {
