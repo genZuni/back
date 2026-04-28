@@ -14,7 +14,10 @@ import { TicketModule } from './ticket/ticket.module';
 @Module({
   imports: [
     AuthModule,
-    ConfigModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
     TranslateModule,
     TeacherModule,
     NotificationModule,
@@ -34,20 +37,32 @@ import { TicketModule } from './ticket/ticket.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
+      // @ts-ignore
       useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        // connectorPackage: 'mysql2',
-        host: 'elbrus.liara.cloud',
-        port: 30439,
-        username: 'root',
-        password: 'aJbgrOJ3A9tk4VtdKHBiJk7m',
-        database: 'rune',
+        // @ts-ignore
+        type: (config.get<string>('DB_TYPE') as 'postgres') || 'postgres',
+        // type: 'postgres',
+        connectorPackage:
+          config.get('DB_TYPE') == 'mysql' ? 'mysql2' : undefined,
+        // connectorPackage:"mysql2",
+
+        host: config.get<string>('DB_HOST') || 'localhost',
+        port: config.get('DB_PORT'),
+        username: config.get('DB_USERNAME'),
+        password: config.get('DB_PASSWORD'),
+        database: config.get('DB_NAME') || 'rune',
+
+        // host: 'elbrus.liara.cloud',
+        // port: 30439,
+        // username: 'root',
+        // password: 'aJbgrOJ3A9tk4VtdKHBiJk7m',
+        // database: 'rune',
         ssl: false,
         connectTimeout: 10000,
         extra: {
           connectionLimit: 100,
         },
-        
+
         autoLoadEntities: true,
         synchronize: true,
         logging: true,
