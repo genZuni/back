@@ -37,35 +37,34 @@ import { TicketModule } from './ticket/ticket.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      // @ts-ignore
+      // useFactory: (config: ConfigService) => ({
+      //   type: 'mysql',
+      //   host: '188.121.97.243',
+      //   port: 3306,
+      //   driver: require('mysql2'),
+      //   username: 'outUser',
+      //   password: '#Test1234',
+      //   database: 'react',
+
+      //   synchronize: true,
+      //   logging: true,
+      // }),
       useFactory: (config: ConfigService) => ({
-        // @ts-ignore
-        type: (config.get<string>('DB_TYPE') as 'postgres') || 'postgres',
-        // type: 'postgres',
-        connectorPackage:
-          config.get('DB_TYPE') == 'mysql' ? 'mysql2' : undefined,
-        // connectorPackage:"mysql2",
-
-        host: config.get<string>('DB_HOST') || 'localhost',
-        port: config.get('DB_PORT'),
-        username: config.get('DB_USERNAME'),
-        password: config.get('DB_PASSWORD'),
-        database: config.get('DB_NAME') || 'rune',
-
-        // host: 'elbrus.liara.cloud',
-        // port: 30439,
-        // username: 'root',
-        // password: 'aJbgrOJ3A9tk4VtdKHBiJk7m',
-        // database: 'rune',
-        ssl: false,
-        connectTimeout: 10000,
-        extra: {
-          connectionLimit: 100,
-        },
-
-        autoLoadEntities: true,
+        type: 'mysql',
+        host: '188.121.97.243',
+        port: 3306,
+        username: 'outUser',
+        password: '#Test1234',
+        database: 'genZni',
+        connectorPackage: 'mysql2', 
         synchronize: true,
         logging: true,
+        connectTimeout: 60000,
+        acquireTimeout: 60000,
+        extra: {
+          connectionLimit: 10,
+          connectTimeout: 60000,
+        },
       }),
     }),
   ],

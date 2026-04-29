@@ -1,0 +1,1 @@
+vless://a8712cb3-58aa-4014-9fdd-9c79f354d707@anten.ir:8880/?type=ws&encryption=none&path=%2F&host=v2.genzuni.website&security=none#Main-lv0obdgb

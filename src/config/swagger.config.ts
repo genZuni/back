@@ -19,6 +19,7 @@ export function setupSwagger(app: INestApplication): void {
   config.servers = [
     { url: 'http://localhost:3002/english' },
     { url: 'http://188.121.111.209:3002/english' },
+    { url: '/english' },
   ];
   const document = SwaggerModule.createDocument(app, config);
 
