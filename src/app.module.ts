@@ -58,6 +58,7 @@ import { TicketModule } from './ticket/ticket.module';
         database: 'genZuni',
         connectorPackage: 'mysql2', 
         synchronize: true,
+        autoLoadEntities:true,
         logging: true,
         connectTimeout: 60000,
         acquireTimeout: 60000,
