@@ -55,7 +55,7 @@ import { TicketModule } from './ticket/ticket.module';
         port: 3306,
         username: 'outUser',
         password: '#Test1234',
-        database: 'genZni',
+        database: 'genZuni',
         connectorPackage: 'mysql2', 
         synchronize: true,
         logging: true,
