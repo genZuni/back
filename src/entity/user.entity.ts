@@ -8,12 +8,14 @@ import {
   BeforeUpdate,
   OneToOne,
   BaseEntity,
+  OneToMany,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/common/enums/role.enum';
 import { Teacher } from './teacher.entity';
+import { TransactionEntity } from './transaction.entity';
 
 @Entity('users_gen')
 export class User extends BaseEntity {
@@ -63,6 +65,8 @@ export class User extends BaseEntity {
   @OneToOne(() => Teacher, (e) => e.user)
   teacher?: Teacher;
 
+  @OneToMany(() => TransactionEntity, (e) => e.user, { onDelete: 'NO ACTION' })
+  transactions: TransactionEntity[];
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword() {
