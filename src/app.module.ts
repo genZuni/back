@@ -11,6 +11,7 @@ import { TranslateModule } from './translate/translate.mofule';
 import { TeacherModule } from './teacher/teacher.module';
 import { NotificationModule } from './notification/notification.module';
 import { TicketModule } from './ticket/ticket.module';
+import { OrderModule } from './order/order.module';
 @Module({
   imports: [
     AuthModule,
@@ -22,6 +23,7 @@ import { TicketModule } from './ticket/ticket.module';
     TeacherModule,
     NotificationModule,
     TicketModule,
+    OrderModule,
     TeacherRequestsModule,
     WinstonModule.forRoot({
       transports: [
@@ -56,9 +58,9 @@ import { TicketModule } from './ticket/ticket.module';
         username: 'outUser',
         password: '#Test1234',
         database: 'genZuni',
-        connectorPackage: 'mysql2', 
+        connectorPackage: 'mysql2',
         synchronize: true,
-        autoLoadEntities:true,
+        autoLoadEntities: true,
         logging: true,
         connectTimeout: 60000,
         acquireTimeout: 60000,

@@ -13,12 +13,17 @@ export enum ETransaction {
   OUTCOME = 'outcome',
   PAYMENT = 'payment',
 }
+export enum ETransactionStatus {
+  WAITING = 'waiting',
+  ACCEPTED = 'accepted',
+  FAIL = 'fail',
+}
 @Entity('Transaction')
 export class TransactionEntity extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('decimal', { precision: 2, scale: 10 })
+  @Column('decimal', { scale: 2, precision: 10 })
   amount: number;
 
   @CreateDateColumn()
@@ -30,8 +35,11 @@ export class TransactionEntity extends BaseEntity {
   @Column({ nullable: true })
   authority: string;
 
-  @Column({ enum: ETransaction })
+  @Column({ enum: ETransaction, type: 'enum' })
   type: ETransaction;
+
+  @Column({ enum: ETransaction, type: 'enum' })
+  status: ETransactionStatus;
 
   @Column({ nullable: true })
   card_pan: string;
