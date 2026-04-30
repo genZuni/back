@@ -183,10 +183,11 @@ export class TicketService {
 
     const [messages, total] = await this.messageRepo.findAndCount({
       where: { ticket: { id: ticketId } },
-      relations: ['sender', 'readStatuses'],
+      // relations: ['sender', 'readStatuses'],
+      relations: { sender: true, readStatuses: { user: true } },
       order: { createdAt: 'DESC' }, // برای نمایش آخرین پیام اول
-      //   skip: (page - 1) * limit,
-      //   take: limit,
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     // اگر کاربر ادمین یا معلم است، پیام‌ها را به عنوان خوانده شده علامت بزن
@@ -197,13 +198,14 @@ export class TicketService {
     // برای هر پیام مشخص کن که توسط کاربر خوانده شده یا نه
     const messagesWithReadStatus = messages.map((msg) => ({
       ...msg,
-      isReadByCurrentUser: msg.readStatuses.some(
-        (rs) => rs.user.id === user.id,
-      ),
+      isReadByCurrentUser: msg.readStatuses.some((rs) => {
+        return rs.user.id === user.id;
+      }),
     }));
 
     return {
       data: messagesWithReadStatus,
+      // messages,/
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -211,13 +213,16 @@ export class TicketService {
   async markMessagesAsReadForUser(ticketId: string, userId: string) {
     const messages = await this.messageRepo.find({
       where: { ticket: { id: ticketId } },
-      relations: ['readStatuses','ticket'],
+      // relations: ['readStatuses', 'ticket'],
+      relations: { readStatuses: true, ticket: true },
     });
 
     const messageIds = messages.map((m) => m.id);
     const existingReads = await this.readStatusRepo.find({
       where: { user: { id: userId }, message: { id: In(messageIds) } },
+      relations: { message: true },
     });
+    console.log(existingReads);
     const existingMessageIds = new Set(
       existingReads.map((rs) => rs.message.id),
     );
@@ -263,9 +268,9 @@ export class TicketService {
 
     const messages = await this.messageRepo.find({
       where: { ticket: { id: In(ticketIds) } },
-      relations: ['readStatuses', 'readStatuses.user','ticket'], // Add user relation
+      relations: ['readStatuses', 'readStatuses.user', 'ticket'], // Add user relation
     });
-console.log("object")
+    console.log('object');
     const counts: Record<string, number> = {};
     for (const ticketId of ticketIds) {
       const ticketMessages = messages.filter((m) => m?.ticket?.id === ticketId);

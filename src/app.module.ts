@@ -59,7 +59,7 @@ import { OrderModule } from './order/order.module';
         password: '#Test1234',
         database: 'genZuni',
         connectorPackage: 'mysql2',
-        synchronize: true,
+        synchronize: false,
         autoLoadEntities: true,
         logging: true,
         connectTimeout: 60000,
