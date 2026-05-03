@@ -173,11 +173,14 @@ export class TicketService {
   }
 
   async getMessages(user: User, ticketId: string, page = 1, limit = 50) {
-    const ticket = await this.ticketRepo.findOne({ where: { id: ticketId } });
+    const ticket = await this.ticketRepo.findOne({
+      where: { id: ticketId },
+      relations: { createdBy: true },
+    });
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
-    if (user.role === 'student' && ticket.createdBy.id !== user.id) {
+    if (user.role === 'student' && ticket.createdBy?.id !== user.id) {
       throw new ForbiddenException('You do not have access to this ticket');
     }
 
