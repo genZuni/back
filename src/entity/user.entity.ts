@@ -16,6 +16,7 @@ import * as bcrypt from 'bcrypt';
 import { Role } from 'src/common/enums/role.enum';
 import { Teacher } from './teacher.entity';
 import { TransactionEntity } from './transaction.entity';
+import { Wallet } from './wallet.entity';
 
 @Entity('users_gen')
 export class User extends BaseEntity {
@@ -67,6 +68,10 @@ export class User extends BaseEntity {
 
   @OneToMany(() => TransactionEntity, (e) => e.user, { onDelete: 'NO ACTION' })
   transactions: TransactionEntity[];
+
+  @OneToOne(() => Wallet, (wallet) => wallet.user)
+  wallet?: Wallet;
+
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword() {

@@ -12,6 +12,7 @@ import { TeacherModule } from './teacher/teacher.module';
 import { NotificationModule } from './notification/notification.module';
 import { TicketModule } from './ticket/ticket.module';
 import { OrderModule } from './order/order.module';
+import { WalletModule } from './wallet/wallet.module';
 @Module({
   imports: [
     AuthModule,
@@ -24,6 +25,7 @@ import { OrderModule } from './order/order.module';
     NotificationModule,
     TicketModule,
     OrderModule,
+    WalletModule,
     TeacherRequestsModule,
     WinstonModule.forRoot({
       transports: [
@@ -53,13 +55,13 @@ import { OrderModule } from './order/order.module';
       // }),
       useFactory: (config: ConfigService) => ({
         type: 'mysql',
-        host: '188.121.97.243',
+        host: '188.121.111.8',
         port: 3306,
         username: 'outUser',
         password: '#Test1234',
         database: 'genZuni',
         connectorPackage: 'mysql2',
-        synchronize: false,
+        synchronize: true,
         autoLoadEntities: true,
         logging: true,
         connectTimeout: 60000,
