@@ -18,6 +18,10 @@ export enum ETransactionStatus {
   WAITING = 'waiting',
   ACCEPTED = 'accepted',
   FAIL = 'fail',
+  // Escrow: money debited from the payer but not yet credited to the payee.
+  // Released (-> ACCEPTED) when the related session is completed, or refunded
+  // (-> FAIL, balance returned) when the booking is cancelled.
+  HELD = 'held',
 }
 @Entity('Transaction')
 export class TransactionEntity extends BaseEntity {

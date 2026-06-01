@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { DataSource, EntityManager, QueryRunner, Repository } from 'typeorm';
 import { Wallet } from '../entity/wallet.entity';
 import {
   ETransaction,
@@ -317,7 +317,179 @@ export class WalletService {
     };
   }
 
+  // ---- escrow (session booking) -------------------------------------------
+
+  /**
+   * Debits `amount` from the student's wallet and records it as a HELD payment
+   * (escrow). The money leaves the student now but is not credited to anyone
+   * until the session is completed (`releaseHold`) or cancelled (`refundHold`).
+   *
+   * Pass `manager` to run inside an existing transaction (e.g. booking several
+   * sessions atomically); omit it to run as its own transaction.
+   */
+  async holdBalance(
+    studentId: string,
+    amount: number,
+    sessionId: string,
+    manager?: EntityManager,
+  ): Promise<TransactionEntity> {
+    if (amount <= 0) {
+      throw new BadRequestException('Amount must be greater than zero.');
+    }
+
+    return this.runInTx(manager, async (m) => {
+      const wallet = await this.lockOrCreateWallet(m, studentId);
+      const balance = Number(wallet.balance);
+      if (balance < amount) {
+        throw new BadRequestException('Insufficient wallet balance.');
+      }
+
+      wallet.balance = balance - amount;
+      await m.save(Wallet, wallet);
+
+      const transaction = m.create(TransactionEntity, {
+        userId: studentId,
+        amount,
+        classId: sessionId,
+        type: ETransaction.PAYMENT,
+        status: ETransactionStatus.HELD,
+        userConfirmed: true,
+      });
+      return m.save(TransactionEntity, transaction);
+    });
+  }
+
+  /**
+   * Releases a previously held payment to the teacher: finalises the student's
+   * payment (HELD -> ACCEPTED, no further balance change since the money was
+   * already debited) and credits the teacher's wallet with its own ACCEPTED
+   * income transaction. Returns the teacher credit transaction.
+   */
+  async releaseHold(
+    heldTransactionId: number,
+    teacherId: string,
+    manager?: EntityManager,
+  ): Promise<TransactionEntity> {
+    return this.runInTx(manager, async (m) => {
+      const held = await m.findOne(TransactionEntity, {
+        where: { id: heldTransactionId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!held) {
+        throw new NotFoundException('Held transaction not found.');
+      }
+      if (held.status !== ETransactionStatus.HELD) {
+        throw new ConflictException('Transaction is not in a held state.');
+      }
+
+      const amount = Number(held.amount);
+
+      // Finalise the student-side payment (already debited at hold time).
+      held.status = ETransactionStatus.ACCEPTED;
+      held.approvedAt = new Date();
+      await m.save(TransactionEntity, held);
+
+      // Credit the teacher's wallet.
+      const teacherWallet = await this.lockOrCreateWallet(m, teacherId);
+      teacherWallet.balance = Number(teacherWallet.balance) + amount;
+      await m.save(Wallet, teacherWallet);
+
+      // Record the teacher credit as its own transaction.
+      const credit = m.create(TransactionEntity, {
+        userId: teacherId,
+        amount,
+        classId: held.classId,
+        type: ETransaction.INCOME,
+        status: ETransactionStatus.ACCEPTED,
+        userConfirmed: true,
+        approvedAt: new Date(),
+        describe: 'Session payment release',
+      });
+      return m.save(TransactionEntity, credit);
+    });
+  }
+
+  /**
+   * Refunds a held payment back to the student (used when a booked session is
+   * cancelled). The held transaction is marked FAIL and the amount is returned
+   * to the student's wallet.
+   */
+  async refundHold(
+    heldTransactionId: number,
+    manager?: EntityManager,
+  ): Promise<TransactionEntity> {
+    return this.runInTx(manager, async (m) => {
+      const held = await m.findOne(TransactionEntity, {
+        where: { id: heldTransactionId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!held) {
+        throw new NotFoundException('Held transaction not found.');
+      }
+      if (held.status !== ETransactionStatus.HELD) {
+        throw new ConflictException('Transaction is not in a held state.');
+      }
+
+      const amount = Number(held.amount);
+
+      const wallet = await this.lockOrCreateWallet(m, held.userId);
+      wallet.balance = Number(wallet.balance) + amount;
+      await m.save(Wallet, wallet);
+
+      held.status = ETransactionStatus.FAIL;
+      held.approvedAt = new Date();
+      held.adminNote = 'Refunded: session cancelled.';
+      return m.save(TransactionEntity, held);
+    });
+  }
+
   // ---- helpers -------------------------------------------------------------
+
+  /**
+   * Runs `work` inside `manager` if provided, otherwise inside a fresh
+   * transaction (connect / commit / rollback / release), mirroring the
+   * QueryRunner pattern used elsewhere in this service.
+   */
+  private async runInTx<T>(
+    manager: EntityManager | undefined,
+    work: (manager: EntityManager) => Promise<T>,
+  ): Promise<T> {
+    if (manager) {
+      return work(manager);
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const result = await work(queryRunner.manager);
+      await queryRunner.commitTransaction();
+      return result;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /** Like getOrCreateWalletForUpdate but against an EntityManager. */
+  private async lockOrCreateWallet(
+    manager: EntityManager,
+    userId: string,
+  ): Promise<Wallet> {
+    let wallet = await manager.findOne(Wallet, {
+      where: { userId },
+      lock: { mode: 'pessimistic_write' },
+    });
+
+    if (!wallet) {
+      wallet = manager.create(Wallet, { userId, balance: 0 });
+      wallet = await manager.save(Wallet, wallet);
+    }
+
+    return wallet;
+  }
 
   private async sumApproved(
     userId: string,

@@ -13,6 +13,7 @@ import { NotificationModule } from './notification/notification.module';
 import { TicketModule } from './ticket/ticket.module';
 import { OrderModule } from './order/order.module';
 import { WalletModule } from './wallet/wallet.module';
+import { BookingModule } from './booking/booking.module';
 @Module({
   imports: [
     AuthModule,
@@ -26,6 +27,7 @@ import { WalletModule } from './wallet/wallet.module';
     TicketModule,
     OrderModule,
     WalletModule,
+    BookingModule,
     TeacherRequestsModule,
     WinstonModule.forRoot({
       transports: [
