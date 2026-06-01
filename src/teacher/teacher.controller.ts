@@ -5,7 +5,6 @@ import {
   Delete,
   Get,
   Param,
-  ParseUUIDPipe,
   Patch,
   Put,
   Query,
@@ -56,7 +55,7 @@ export class TeacherController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiBearerAuth()
-  addUser(@Param('id', ParseUUIDPipe) id: string) {
+  addUser(@Param('id',) id: string) {
     return this.teacherServices.addUser(id);
   }
 
@@ -81,6 +80,7 @@ export class TeacherController {
     description: 'Filter by category ID',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
+
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'List of teachers',
@@ -145,7 +145,7 @@ export class TeacherController {
     description: 'Teacher not found',
   })
   detail(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id',) id: string,
     @Query('lang') locate?: ELanguage,
   ) {
     return this.teacherServices.findOne(id, locate);
@@ -174,7 +174,7 @@ export class TeacherController {
     description: 'Invalid input data',
   })
   update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id',) id: string,
     @Body() dto: UpdateTeacherDto,
   ) {
     return this.teacherServices.update(dto, id);
@@ -198,7 +198,7 @@ export class TeacherController {
     status: HttpStatus.NOT_FOUND,
     description: 'Teacher not found',
   })
-  delete(@Param('id', ParseUUIDPipe) id: string) {
+  delete(@Param('id',) id: string) {
     // return this.teacherServices.delete(id);
   }
 }

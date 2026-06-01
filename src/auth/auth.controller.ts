@@ -31,8 +31,8 @@ export class AuthController {
   @ApiBearerAuth()
   @Post('as/:id')
   @ApiOperation({ summary: 'Login as another user' })
-  loginAs(@Param('id') id: number) {
-    return this.authService.loginAs(+id);
+  loginAs(@Param('id') id: string) {
+    return this.authService.loginAs(id);
   }
   @Post('signup')
   async signup(@Body() dto: RegisterDto) {

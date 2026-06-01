@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsUUID } from 'class-validator';
+import { IsDateString, IsString, IsUUID } from 'class-validator';
 
 export class TrialBookDto {
   @ApiProperty({
     description: 'Teacher id (equals the teacher user id).',
     example: 'a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
   })
-  @IsUUID()
+  // @IsUUID()
+  @IsString()
   teacherId: string;
 
   @ApiProperty({
