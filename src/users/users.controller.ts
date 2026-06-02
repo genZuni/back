@@ -1,13 +1,14 @@
 import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  UseGuards, 
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
   Query,
+  Req,
   UseInterceptors,
   ClassSerializerInterceptor,
   HttpCode,
@@ -23,6 +24,8 @@ import {
 } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -57,6 +60,62 @@ export class UsersController {
   async create(@Body() createUserDto: CreateUserDto) {
     const user = await this.usersService.create(createUserDto);
     return new UserResponseDto(user);
+  }
+
+  // ---- self-service ("me") routes — declared before the ":id" routes so
+  // ---- "/users/me" is not captured as ":id" by the admin handlers below.
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get my own profile' })
+  @ApiResponse({ status: 200, type: UserResponseDto })
+  async getMe(@Req() req): Promise<UserResponseDto> {
+    const user = await this.usersService.findOne(req.user.id);
+    return new UserResponseDto(user);
+  }
+
+  @Patch('me')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update my own profile (name/email/phone/country)' })
+  @ApiResponse({ status: 200, type: UserResponseDto })
+  @ApiResponse({ status: 409, description: 'Email already in use' })
+  async updateMe(
+    @Req() req,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<UserResponseDto> {
+    const user = await this.usersService.updateProfile(req.user.id, dto);
+    return new UserResponseDto(user);
+  }
+
+  @Patch('me/password')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change my password' })
+  @ApiResponse({ status: 200, description: 'Password updated.' })
+  @ApiResponse({ status: 400, description: 'Current password is incorrect.' })
+  async changePassword(
+    @Req() req,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ success: true }> {
+    await this.usersService.changePassword(
+      req.user.id,
+      dto.currentPassword,
+      dto.newPassword,
+    );
+    return { success: true };
+  }
+
+  @Delete('me')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Deactivate (soft-delete) my own account' })
+  @ApiResponse({ status: 204, description: 'Account deactivated.' })
+  async deleteMe(@Req() req): Promise<void> {
+    await this.usersService.deactivate(req.user.id);
   }
 
   @Get()

@@ -76,6 +76,55 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
+  /** Self-service profile update (name/email/phone/country only). */
+  async updateProfile(
+    id: string,
+    dto: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      country?: string;
+    },
+  ): Promise<User> {
+    const user = await this.findOne(id);
+
+    if (dto.email && dto.email !== user.email) {
+      const existingUser = await this.findByEmail(dto.email);
+      if (existingUser && existingUser.id !== id) {
+        throw new ConflictException('Email already in use');
+      }
+    }
+
+    if (dto.name !== undefined) user.name = dto.name;
+    if (dto.email !== undefined) user.email = dto.email;
+    if (dto.phone !== undefined) user.phone = dto.phone;
+    if (dto.country !== undefined) user.country = dto.country;
+
+    return this.usersRepository.save(user);
+  }
+
+  /** Verifies the current password and sets a new one (re-hashed by the entity hook). */
+  async changePassword(
+    id: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.findOne(id);
+    const ok = await user.validatePassword(currentPassword);
+    if (!ok) {
+      throw new BadRequestException('Current password is incorrect.');
+    }
+    user.password = newPassword; // hashed by the @BeforeUpdate hook on save
+    await this.usersRepository.save(user);
+  }
+
+  /** Soft-deletes the account (deactivates it); login is then blocked. */
+  async deactivate(id: string): Promise<void> {
+    const user = await this.findOne(id);
+    user.isActive = false;
+    await this.usersRepository.save(user);
+  }
+
   async updateBalance(id: string, amount: number): Promise<User> {
     const user = await this.findOne(id);
 

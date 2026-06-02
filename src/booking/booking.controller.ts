@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  Patch,
   Post,
   Query,
   Request,
@@ -62,6 +64,42 @@ export class BookingController {
     @Body() dto: PaidBookDto,
   ): Promise<SessionResponseDto[]> {
     return this.bookingService.bookPaid(req.user.id, dto);
+  }
+
+  @Patch('sessions/:id/cancel')
+  @ApiOperation({
+    summary: 'Cancel one of my scheduled sessions (student)',
+    description:
+      'Refunds any held payment to the wallet. Only future, still-scheduled ' +
+      'sessions can be cancelled.',
+  })
+  @ApiResponse({ status: 200, type: SessionResponseDto })
+  @ApiResponse({ status: 400, description: 'Session is not cancellable.' })
+  @ApiResponse({ status: 403, description: 'Session belongs to another user.' })
+  @ApiResponse({ status: 404, description: 'Session not found.' })
+  async cancelSession(
+    @Request() req,
+    @Param('id') id: string,
+  ): Promise<SessionResponseDto> {
+    return this.bookingService.cancelSession(req.user.id, id);
+  }
+
+  @Patch('sessions/:id/confirm')
+  @ApiOperation({
+    summary: 'Confirm a past session took place (student)',
+    description:
+      'Marks the session completed and releases the held payment to the ' +
+      'teacher. Allowed only after the session end time has passed.',
+  })
+  @ApiResponse({ status: 200, type: SessionResponseDto })
+  @ApiResponse({ status: 400, description: 'Session is not confirmable yet.' })
+  @ApiResponse({ status: 403, description: 'Session belongs to another user.' })
+  @ApiResponse({ status: 404, description: 'Session not found.' })
+  async confirmSession(
+    @Request() req,
+    @Param('id') id: string,
+  ): Promise<SessionResponseDto> {
+    return this.bookingService.confirmSession(req.user.id, id);
   }
 
   @Get('sessions')

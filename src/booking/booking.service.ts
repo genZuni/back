@@ -14,6 +14,8 @@ import { AvailabilityService } from './availability.service';
 import { TrialBookDto } from './dto/trial-book.dto';
 import { PaidBookDto } from './dto/paid-book.dto';
 import { SessionResponseDto } from './dto/session-response.dto';
+import { NotificationService } from '../notification/notification.service';
+import { ENotificationType } from '../entity/notification.entity';
 
 @Injectable()
 export class BookingService {
@@ -25,6 +27,7 @@ export class BookingService {
     private readonly walletService: WalletService,
     private readonly availabilityService: AvailabilityService,
     private readonly dataSource: DataSource,
+    private readonly notificationService: NotificationService,
   ) {}
 
   /** Books the student's single free trial session with a teacher. */
@@ -161,6 +164,12 @@ export class BookingService {
       return created;
     });
 
+    await this.safeNotify(
+      studentId,
+      ENotificationType.BOOKING_APPROVED,
+      `${saved.length} جلسه با موفقیت رزرو شد`,
+    );
+
     return saved.map(SessionResponseDto.fromEntity);
   }
 
@@ -176,7 +185,124 @@ export class BookingService {
     return sessions.map(SessionResponseDto.fromEntity);
   }
 
+  /**
+   * Cancels a future, still-scheduled session owned by the student. Any held
+   * payment is refunded to the wallet (escrow -> back to student) atomically.
+   * Policy: only `SCHEDULED` sessions that have not started yet can be cancelled.
+   */
+  async cancelSession(
+    studentId: string,
+    sessionId: string,
+  ): Promise<SessionResponseDto> {
+    const session = await this.sessionRepo.findOne({
+      where: { id: sessionId },
+    });
+    if (!session) {
+      throw new NotFoundException('Session not found.');
+    }
+    if (session.studentId !== studentId) {
+      throw new ForbiddenException('This session does not belong to you.');
+    }
+    if (session.sessionStatus !== ESessionStatus.SCHEDULED) {
+      throw new BadRequestException(
+        'Only scheduled sessions can be cancelled.',
+      );
+    }
+    if (new Date(session.startDateTime).getTime() <= Date.now()) {
+      throw new BadRequestException('This session can no longer be cancelled.');
+    }
+
+    const saved = await this.dataSource.transaction(async (m) => {
+      if (session.heldTransactionId) {
+        await this.walletService.refundHold(session.heldTransactionId, m);
+      }
+      session.sessionStatus = ESessionStatus.CANCELLED;
+      return m.save(Session, session);
+    });
+
+    await this.safeNotify(
+      studentId,
+      ENotificationType.SYSTEM,
+      'جلسه شما لغو شد',
+      session.isTrial
+        ? undefined
+        : 'مبلغ نگه‌داشته‌شده به کیف پول شما بازگردانده شد.',
+    );
+
+    return SessionResponseDto.fromEntity(saved);
+  }
+
+  /**
+   * Student confirms a past session took place: marks it COMPLETED and releases
+   * the held payment to the teacher. Only the owner can confirm, and only a
+   * SCHEDULED session whose end time has already passed.
+   */
+  async confirmSession(
+    studentId: string,
+    sessionId: string,
+  ): Promise<SessionResponseDto> {
+    const session = await this.sessionRepo.findOne({
+      where: { id: sessionId },
+    });
+    if (!session) {
+      throw new NotFoundException('Session not found.');
+    }
+    if (session.studentId !== studentId) {
+      throw new ForbiddenException('This session does not belong to you.');
+    }
+    if (session.sessionStatus !== ESessionStatus.SCHEDULED) {
+      throw new BadRequestException('Only scheduled sessions can be confirmed.');
+    }
+    if (new Date(session.endDateTime).getTime() > Date.now()) {
+      throw new BadRequestException(
+        'You can confirm a session only after it has ended.',
+      );
+    }
+
+    const saved = await this.dataSource.transaction(async (m) => {
+      if (session.heldTransactionId) {
+        await this.walletService.releaseHold(
+          session.heldTransactionId,
+          session.teacherId,
+          m,
+        );
+      }
+      session.sessionStatus = ESessionStatus.COMPLETED;
+      session.paymentReleased = true;
+      return m.save(Session, session);
+    });
+
+    await this.safeNotify(
+      session.teacherId,
+      ENotificationType.PAYMENT_RELEASED,
+      'پرداخت جلسه آزاد شد',
+      'دانش‌آموز برگزاری جلسه را تأیید کرد.',
+    );
+    await this.safeNotify(
+      studentId,
+      ENotificationType.SYSTEM,
+      'جلسه تأیید شد',
+      'از تأیید شما متشکریم.',
+    );
+
+    return SessionResponseDto.fromEntity(saved);
+  }
+
   // ---- helpers -------------------------------------------------------------
+
+  /** Best-effort notification: never blocks the booking flow if it fails. */
+  private async safeNotify(
+    userId: string,
+    type: ENotificationType,
+    title: string,
+    body?: string,
+  ): Promise<void> {
+    try {
+      await this.notificationService.create(userId, { type, title, body });
+    } catch {
+      /* best-effort */
+    }
+  }
 
   private async loadTeacher(teacherId: string): Promise<Teacher> {
     const teacher = await this.teacherRepo.findOne({ where: { id: teacherId } });
