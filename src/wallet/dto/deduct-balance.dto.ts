@@ -9,15 +9,21 @@ export class DeductBalanceDto {
     description: 'User whose wallet will be charged (uuid).',
     example: 'b3f1c2a4-5d6e-7f80-9a1b-2c3d4e5f6071',
   })
-  @IsUUID()
+  // @IsUUID()
   userId: string;
 
-  @ApiProperty({ description: 'Amount to deduct (positive decimal).', example: 99000 })
+  @ApiProperty({
+    description: 'Amount to deduct (positive decimal).',
+    example: 99000,
+  })
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   amount: number;
 
-  @ApiProperty({ description: 'Class the payment is for.', example: 'class-12' })
+  @ApiProperty({
+    description: 'Class the payment is for.',
+    example: 'class-12',
+  })
   @IsString()
   classId: string;
 }

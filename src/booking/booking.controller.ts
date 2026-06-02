@@ -50,8 +50,8 @@ export class BookingController {
   @ApiOperation({
     summary: 'Book one or more paid sessions (student)',
     description:
-      'Requires a completed trial with the teacher. Books N sessions at the ' +
-      'given frequency and holds the total in escrow until each is completed.',
+      'Requires a completed trial with the teacher. Books one session per ' +
+      'selected slot and holds the total in escrow until each is completed.',
   })
   @ApiResponse({ status: 201, type: [SessionResponseDto] })
   @ApiResponse({ status: 400, description: 'Insufficient wallet balance.' })

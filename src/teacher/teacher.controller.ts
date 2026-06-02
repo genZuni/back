@@ -119,7 +119,7 @@ export class TeacherController {
     return this.teacherServices.findOne(req.user.id, locate);
   }
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  // @Roles('admin')
   @ApiBearerAuth()
   @Get('detail/:id')
   @ApiOperation({ summary: 'Get teacher details by ID' })

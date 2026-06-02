@@ -12,10 +12,8 @@ import { Teacher } from '../entity/teacher.entity';
 import { WalletService } from '../wallet/wallet.service';
 import { AvailabilityService } from './availability.service';
 import { TrialBookDto } from './dto/trial-book.dto';
-import { EBookingFrequency, PaidBookDto } from './dto/paid-book.dto';
+import { PaidBookDto } from './dto/paid-book.dto';
 import { SessionResponseDto } from './dto/session-response.dto';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class BookingService {
@@ -104,14 +102,8 @@ export class BookingService {
       throw new BadRequestException('Teacher has not configured a price yet.');
     }
 
-    const stepDays =
-      (dto.frequency ?? EBookingFrequency.WEEKLY) === EBookingFrequency.DAILY
-        ? 1
-        : 7;
-
-    const firstStart = this.parseFutureDate(dto.startDateTime);
-    const slots = Array.from({ length: dto.numberOfSessions }, (_, i) => {
-      const start = new Date(firstStart.getTime() + i * stepDays * DAY_MS);
+    const slots = dto.slots.map((s) => {
+      const start = this.parseFutureDate(s.startDateTime);
       const end = new Date(start.getTime() + duration * 60 * 1000);
       return { start, end };
     });
