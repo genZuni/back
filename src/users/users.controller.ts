@@ -253,11 +253,24 @@ export class UsersController {
     return new UserResponseDto(user);
   }
 
+  @Get(':id/sessions')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get a user's sessions (admin)",
+    description: 'Lists all sessions the user is involved in (as student or teacher).'
+  })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  async getUserSessions(@Param('id') id: string) {
+    return this.usersService.getUserSessions(id)
+  }
+
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update user',
     description: 'Updates an existing user (Admin only)'
   })

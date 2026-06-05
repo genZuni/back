@@ -317,6 +317,29 @@ export class WalletService {
     };
   }
 
+  /** Admin: all transactions (any user/status), newest first, paginated. */
+  async getAllTransactions(
+    page = 1,
+    limit = 50,
+  ): Promise<PaginatedTransactionsDto> {
+    const safePage = Math.max(1, Math.floor(page) || 1);
+    const safeLimit = Math.min(200, Math.max(1, Math.floor(limit) || 50));
+
+    const [items, total] = await this.transactionRepository.findAndCount({
+      order: { createdAt: 'DESC', id: 'DESC' },
+      skip: (safePage - 1) * safeLimit,
+      take: safeLimit,
+    });
+
+    return {
+      data: items.map((tx) => TransactionResponseDto.fromEntity(tx)),
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
+    };
+  }
+
   // ---- escrow (session booking) -------------------------------------------
 
   /**

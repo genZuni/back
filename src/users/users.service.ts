@@ -10,13 +10,26 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from '../common/enums/role.enum';
 import { User } from 'src/entity/user.entity';
+import { Session } from 'src/entity/session.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Session)
+    private sessionsRepository: Repository<Session>,
   ) {}
+
+  /** Admin: all sessions a user is involved in (as student or teacher). */
+  async getUserSessions(id: string): Promise<Session[]> {
+    await this.findOne(id); // 404 if the user does not exist
+
+    return this.sessionsRepository.find({
+      where: [{ studentId: id }, { teacherId: id }],
+      order: { startDateTime: 'DESC' },
+    });
+  }
 
   async create(createUserDto: CreateUserDto) {
     const existingUser = await this.usersRepository.findOne({

@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -6,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Query,
   Request,
   UseGuards,
@@ -17,8 +19,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.detector';
+import { Role } from 'src/common/enums/role.enum';
 import { ENotificationType } from 'src/entity/notification.entity';
 import { NotificationService } from './notification.service';
+import { BroadcastDto } from './dto/broadcast.dto';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -26,6 +32,17 @@ import { NotificationService } from './notification.service';
 @Controller('notification')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
+
+  @Post('broadcast')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Admin: broadcast a notification to an audience' })
+  async broadcast(@Body() dto: BroadcastDto) {
+    return this.notificationService.broadcast(dto.audience, {
+      title: dto.title,
+      body: dto.body,
+    });
+  }
 
   @Get()
   @ApiOperation({ summary: 'List my notifications (newest first)' })

@@ -18,6 +18,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.detector';
+import { Role } from 'src/common/enums/role.enum';
 import { WalletService } from './wallet.service';
 import { RechargeRequestDto } from './dto/recharge-request.dto';
 import { TransactionResponseDto } from './dto/transaction-response.dto';
@@ -103,5 +106,63 @@ export class WalletController {
   })
   async getSummary(@Request() req): Promise<WalletBalanceDto> {
     return this.walletService.getWalletSummary(req.user.id);
+  }
+
+  // ---- admin: recharge approval ----
+
+  @Get('admin/pending')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Admin: list pending (user-confirmed) recharges' })
+  @ApiResponse({ status: 200, type: PaginatedTransactionsDto })
+  async adminPending(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<PaginatedTransactionsDto> {
+    return this.walletService.getPendingConfirmedTransactions(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
+  }
+
+  @Get('admin/transactions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Admin: list all transactions (history)' })
+  @ApiResponse({ status: 200, type: PaginatedTransactionsDto })
+  async adminAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<PaginatedTransactionsDto> {
+    return this.walletService.getAllTransactions(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
+  }
+
+  @Patch('admin/transactions/:id/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Admin: approve a transaction (applies balance)' })
+  @ApiResponse({ status: 200, type: TransactionResponseDto })
+  async adminApprove(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('note') note?: string,
+  ): Promise<TransactionResponseDto> {
+    return this.walletService.adminApproveTransaction(req.user.id, id, note);
+  }
+
+  @Patch('admin/transactions/:id/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Admin: reject a transaction' })
+  @ApiResponse({ status: 200, type: TransactionResponseDto })
+  async adminReject(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('note') note?: string,
+  ): Promise<TransactionResponseDto> {
+    return this.walletService.adminRejectTransaction(req.user.id, id, note);
   }
 }

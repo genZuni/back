@@ -12,13 +12,44 @@ import {
   ENotificationType,
   Notification,
 } from 'src/entity/notification.entity';
+import { Role } from 'src/common/enums/role.enum';
 
 @Injectable()
 export class NotificationService {
   constructor(
     @InjectRepository(Notification)
     private readonly repo: Repository<Notification>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
   ) {}
+
+  /**
+   * Admin: broadcast a notification to an audience ('all' or a single role).
+   * Creates one notification row per matching user.
+   */
+  async broadcast(
+    audience: 'all' | 'student' | 'teacher' | 'admin',
+    data: { title: string; body?: string },
+  ): Promise<{ sentCount: number; audience: string }> {
+    const users = await this.userRepo.find({
+      where: audience === 'all' ? {} : { role: audience as Role },
+      select: ['id'],
+    });
+
+    if (users.length) {
+      const rows = users.map((u) =>
+        this.repo.create({
+          userId: u.id,
+          type: ENotificationType.SYSTEM,
+          title: data.title,
+          body: data.body,
+        }),
+      );
+      await this.repo.save(rows);
+    }
+
+    return { sentCount: users.length, audience };
+  }
 
   /** Persists a notification for a user. */
   async create(

@@ -36,6 +36,41 @@ export class SessionService {
     return sessions.map(SessionResponseDto.fromEntity);
   }
 
+  /** Admin: every session in the system, newest first. */
+  async getAllSessions(): Promise<SessionResponseDto[]> {
+    const sessions = await this.sessionRepo.find({
+      order: { startDateTime: 'DESC' },
+    });
+    return sessions.map(SessionResponseDto.fromEntity);
+  }
+
+  /**
+   * Admin: cancels any scheduled session (no owner/time checks). Refunds any
+   * held payment to the student.
+   */
+  async adminCancelSession(sessionId: string): Promise<SessionResponseDto> {
+    const result = await this.dataSource.transaction(async (m) => {
+      const session = await m.findOne(Session, {
+        where: { id: sessionId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!session) {
+        throw new NotFoundException('Session not found.');
+      }
+      if (session.sessionStatus !== ESessionStatus.SCHEDULED) {
+        throw new ConflictException('Only scheduled sessions can be cancelled.');
+      }
+
+      if (session.heldTransactionId != null && !session.paymentReleased) {
+        await this.walletService.refundHold(session.heldTransactionId, m);
+      }
+      session.sessionStatus = ESessionStatus.CANCELLED;
+      return m.save(Session, session);
+    });
+
+    return SessionResponseDto.fromEntity(result);
+  }
+
   /**
    * Teacher marks a session complete. For paid sessions this releases the held
    * payment to the teacher's wallet. Idempotency is guarded by requiring the

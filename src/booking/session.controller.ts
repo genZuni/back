@@ -89,4 +89,21 @@ export class AdminSessionController {
   ): Promise<SessionResponseDto> {
     return this.sessionService.resolveDispute(id, dto);
   }
+
+  @Get()
+  @ApiOperation({ summary: 'List all sessions (admin)' })
+  @ApiResponse({ status: 200, type: [SessionResponseDto] })
+  async list(): Promise<SessionResponseDto[]> {
+    return this.sessionService.getAllSessions();
+  }
+
+  @Patch(':id/cancel')
+  @ApiOperation({ summary: 'Cancel any scheduled session (admin)' })
+  @ApiParam({ name: 'id', description: 'Session id (uuid)' })
+  @ApiResponse({ status: 200, type: SessionResponseDto })
+  @ApiResponse({ status: 404, description: 'Session not found.' })
+  @ApiResponse({ status: 409, description: 'Session is not scheduled.' })
+  async cancel(@Param('id') id: string): Promise<SessionResponseDto> {
+    return this.sessionService.adminCancelSession(id);
+  }
 }
