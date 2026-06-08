@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBearerAuth } from '@nestjs/swagger';
-import { diskStorage } from 'multer';
+// import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { TeacherRequestsService } from './teacher-requests.service';
 import { CreateTeacherRequestDto } from './dto/create-teacher-request.dto';
