@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -11,11 +12,13 @@ import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import crypto from 'crypto';
 import { AppService } from 'src/app.service';
 import { RegisterDto } from './dto/register.dto';
+import { MailService } from 'src/mail/mail.service';
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private mailService: MailService,
     // private appService: AppService,
   ) {}
   private newUsers: any = [];
@@ -70,8 +73,8 @@ export class AuthService {
     if (existing) {
       throw new ConflictException('Email already exists');
     }
-    const code = 11111;
-    // const code = crypto.randomInt(10000);
+    const code = crypto.randomInt(100000, 1000000); // 6-digit OTP
+    const expiresAt = Date.now() + 10 * 60 * 1000; // valid 10 minutes
     //     await this.appService.sendHtmlEmail(
     //       dto.email,
     //       'Email registeration code',
@@ -118,15 +121,29 @@ export class AuthService {
     // </html>`,
     //     );
 
-    console.log(code, dto);
-    this.newUsers.push({ code, ...dto });
+    // Send the OTP first; if delivery fails we don't store a pending signup.
+    await this.mailService.sendOtp(dto.email, code);
+
+    // Replace any previous pending signup for this email, then store the new one.
+    this.newUsers = this.newUsers.filter((el: any) => el.email !== dto.email);
+    this.newUsers.push({ code, expiresAt, ...dto });
+
     return dto.email;
   }
   async AcceptSignUp(email: string, code: string) {
-    const data = this.newUsers.find(
-      (el: any) => el.email == email && el.code == code,
+    const idx = this.newUsers.findIndex(
+      (el: any) => el.email === email && String(el.code) === String(code),
     );
-    if (!data) throw new NotFoundException('data not fount');
+    if (idx === -1) {
+      throw new NotFoundException('Invalid verification code');
+    }
+
+    const data = this.newUsers[idx];
+    if (data.expiresAt && data.expiresAt < Date.now()) {
+      this.newUsers.splice(idx, 1);
+      throw new BadRequestException('Verification code expired');
+    }
+    this.newUsers.splice(idx, 1); // consume the pending signup
 
     const user = await this.usersService.create(data);
     const payload = {

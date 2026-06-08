@@ -10,12 +10,14 @@ import { JwtStrategy } from './jwt.strategy';
 
 import { AppModule } from 'src/app.module';
 import { UsersModule } from 'src/users/users.module';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
     UsersModule,
     ConfigModule,
     PassportModule,
+    MailModule,
     forwardRef(() => AppModule),
 
     JwtModule.registerAsync({
